@@ -29,6 +29,16 @@ const EVENT_OPTIONS = [
     "description": "Triggers when a file upload completes."
   },
   {
+    "name": "project_export.failed",
+    "value": "project_export.failed",
+    "description": "Triggers when a project export fails."
+  },
+  {
+    "name": "project_export.succeeded",
+    "value": "project_export.succeeded",
+    "description": "Triggers when a project export completes successfully."
+  },
+  {
     "name": "tool_execution.failed",
     "value": "tool_execution.failed",
     "description": "Triggers when a tool execution fails."
