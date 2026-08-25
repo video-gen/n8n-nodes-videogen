@@ -1,6 +1,6 @@
 {
   "name": "n8n-nodes-videogen",
-  "version": "2.1.5",
+  "version": "2.1.6",
   "description": "n8n community node for VideoGen. Generate images, videos, voiceovers, sound effects, and avatar clips. Node definition is generated from the VideoGen developer API OpenAPI spec.",
   "keywords": [
     "n8n-community-node-package",
