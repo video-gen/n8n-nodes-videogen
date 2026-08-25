@@ -1,4 +1,4 @@
-import type { ICredentialType, INodeProperties } from 'n8n-workflow';
+import type { ICredentialType, INodeProperties, Icon } from 'n8n-workflow';
 
 /**
  * "Sign in with VideoGen" via OAuth 2.1 (authorization code + PKCE). Extends
@@ -24,6 +24,11 @@ export class VideoGenOAuth2Api implements ICredentialType {
 	extends = ['oAuth2Api'];
 
 	displayName = 'VideoGen OAuth2 API';
+
+	icon: Icon = {
+		light: 'file:../nodes/VideoGen/videogen.svg',
+		dark: 'file:../nodes/VideoGen/videogen.dark.svg',
+	};
 
 	documentationUrl = 'https://docs.videogen.io';
 

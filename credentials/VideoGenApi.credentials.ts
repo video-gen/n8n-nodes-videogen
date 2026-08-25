@@ -3,6 +3,7 @@ import type {
 	ICredentialTestRequest,
 	ICredentialType,
 	INodeProperties,
+	Icon,
 } from 'n8n-workflow';
 
 /**
@@ -13,6 +14,11 @@ export class VideoGenApi implements ICredentialType {
 	name = 'videoGenApi';
 
 	displayName = 'VideoGen API';
+
+	icon: Icon = {
+		light: 'file:../nodes/VideoGen/videogen.svg',
+		dark: 'file:../nodes/VideoGen/videogen.dark.svg',
+	};
 
 	documentationUrl = 'https://docs.videogen.io';
 

@@ -2,6 +2,7 @@
 // Run `pnpm --filter api run generate:n8n` to regenerate.
 /* eslint-disable */
 import {
+	NodeConnectionTypes,
 	type IHookFunctions,
 	type INodeType,
 	type INodeTypeDescription,
@@ -56,14 +57,17 @@ export class VideoGenTrigger implements INodeType {
 	description: INodeTypeDescription = {
 		displayName: "VideoGen Trigger",
 		name: "videoGenTrigger",
-		icon: "file:videogen.svg",
+		icon: {
+			light: "file:videogen.svg",
+			dark: "file:videogen.dark.svg",
+		},
 		group: ["trigger"],
 		version: 1,
 		subtitle: '={{($parameter["events"] || []).join(", ")}}',
 		description: "Starts the workflow when VideoGen sends a subscribed event",
 		defaults: { name: "VideoGen Trigger" },
 		inputs: [],
-		outputs: ["main"],
+		outputs: [NodeConnectionTypes.Main],
 		credentials: [
 			{
 				name: "videoGenOAuth2Api",
@@ -155,8 +159,11 @@ export class VideoGenTrigger implements INodeType {
 							json: true,
 						},
 					);
-				} catch (error) {
-					// The endpoint may already be gone (deleted server-side); treat as success.
+				} catch (error: unknown) {
+					const message = error instanceof Error ? error.message : String(error);
+					this.logger.warn("VideoGen webhook delete failed; treating as already gone.", {
+						error: message,
+					});
 				}
 
 				delete staticData.endpointId;
