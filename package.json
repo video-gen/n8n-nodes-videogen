@@ -1,0 +1,54 @@
+{
+  "name": "n8n-nodes-videogen",
+  "version": "2.1.5",
+  "description": "n8n community node for VideoGen. Generate images, videos, voiceovers, sound effects, and avatar clips. Node definition is generated from the VideoGen developer API OpenAPI spec.",
+  "keywords": [
+    "n8n-community-node-package",
+    "n8n",
+    "videogen",
+    "video",
+    "ai"
+  ],
+  "license": "MIT",
+  "homepage": "https://videogen.io",
+  "author": {
+    "name": "VideoGen",
+    "email": "support@videogen.io"
+  },
+  "main": "index.js",
+  "scripts": {
+    "build": "tsc && node copy-icons.mjs"
+  },
+  "engines": {
+    "node": ">=20.15"
+  },
+  "files": [
+    "dist"
+  ],
+  "n8n": {
+    "n8nNodesApiVersion": 1,
+    "credentials": [
+      "dist/credentials/VideoGenApi.credentials.js",
+      "dist/credentials/VideoGenOAuth2Api.credentials.js"
+    ],
+    "nodes": [
+      "dist/nodes/VideoGen/VideoGen.node.js",
+      "dist/nodes/VideoGen/VideoGenTrigger.node.js"
+    ]
+  },
+  "peerDependencies": {
+    "n8n-workflow": "*"
+  },
+  "devDependencies": {
+    "@typescript/native": "npm:typescript@^7.0.2",
+    "n8n-workflow": "^1.82.0",
+    "typescript": "npm:@typescript/typescript6@^6.0.2"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/video-gen/n8n-nodes-videogen.git"
+  },
+  "bugs": {
+    "url": "https://github.com/video-gen/n8n-nodes-videogen/issues"
+  }
+}

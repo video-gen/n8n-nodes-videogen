@@ -1,0 +1,65 @@
+# Publishes n8n-nodes-videogen to npm on every `v*.*.*` tag push.
+#
+# n8n verified-community review requires the package to be published from
+# GitHub Actions with an npm provenance statement (since 2026-05-01). Local
+# `npm publish` is rejected. Provenance is signed by GitHub's OIDC token.
+#
+# One-time npm Trusted Publisher (preferred, no long-lived token):
+# 1. npmjs.com → n8n-nodes-videogen → Settings → Publish access → Trusted Publishers
+# 2. Add GitHub Actions:
+#    Repository owner: video-gen
+#    Repository name: n8n-nodes-videogen
+#    Workflow name: publish.yml
+#    Environment: (leave blank)
+#
+# Fallback: store a granular npm automation token as the NPM_TOKEN Actions secret.
+#
+# The monorepo script `pnpm --filter api run publish:n8n` generates the node,
+# mirrors this tree to video-gen/n8n-nodes-videogen, and pushes the version tag
+# that triggers this workflow.
+
+name: Publish
+
+on:
+  push:
+    tags:
+      - "v*.*.*"
+
+jobs:
+  publish:
+    name: Publish to npm
+    runs-on: ubuntu-latest
+
+    permissions:
+      id-token: write
+      contents: read
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          registry-url: "https://registry.npmjs.org"
+
+      - name: Install dependencies
+        run: npm ci --include=dev --ignore-scripts
+
+      - name: Build
+        run: npm run build
+
+      - name: Publish
+        run: |
+          version="$(node -p "require('./package.json').version")"
+          tag="latest"
+          if [[ "${version}" == *-* ]]; then
+            prerelease="${version#*-}"
+            tag="${prerelease%%.*}"
+          fi
+          if [[ -n "${NPM_TOKEN}" ]]; then
+            npm config set //registry.npmjs.org/:_authToken "${NPM_TOKEN}"
+          fi
+          npm publish --access public --provenance --tag "${tag}"
+        env:
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
