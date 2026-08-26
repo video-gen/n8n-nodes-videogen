@@ -1114,7 +1114,7 @@ export class VideoGen implements INodeType {
 		        "name": "List TTS voices",
 		        "value": "listTtsVoices",
 		        "action": "List TTS voices",
-		        "description": "List available text-to-speech voices. Pass a `voiceId` from the response to the text-to-speech endpoint. Cursor-paginated; see the [Pagination](/pagination) guide. Pass `query` to filter by voice id, display name, language, accent, or description.",
+		        "description": "List available text-to-speech voices. Pass a `voiceId` or `displayName` from the response to the text-to-speech endpoint. Cursor-paginated; see the [Pagination](/pagination) guide. Pass `query` to filter by voice id, display name, language, accent, or description.",
 		        "routing": {
 		          "request": {
 		            "method": "GET",
@@ -2903,7 +2903,7 @@ export class VideoGen implements INodeType {
 		      }
 		    },
 		    "required": true,
-		    "description": "Voice id from `GET /v1/resources/tts-voices`. Only voices with `supportsDirectToolExecution` set to true are accepted.",
+		    "description": "Catalog `displayName` (e.g. `Matilda`) or voice id from `GET /v1/resources/tts-voices` (e.g. `vg_voic_...`). Only voices with `supportsDirectToolExecution` set to true are accepted.",
 		    "displayOptions": {
 		      "show": {
 		        "resource": [
@@ -3833,7 +3833,7 @@ export class VideoGen implements INodeType {
 		            "value": "MAX"
 		          }
 		        ],
-		        "description": "Image generation quality tier for AI-generated visuals. Optional; when omitted, your account's Default AI quality for images is used (change it at https://app.videogen.io/settings/account). Only applies when `visualStyle.type` is AI_IMAGE or ENTITY; STOCK pulls existing footage and is unaffected."
+		        "description": "Image generation quality tier for AI-generated visuals. Optional; when omitted, your account's Default AI quality for images is used (change it at https://app.videogen.io/settings/account). Only applies when `visualStyle.type` is AI_IMAGE; STOCK pulls existing footage and is unaffected."
 		      },
 		      {
 		        "displayName": "Language",
@@ -3859,7 +3859,7 @@ export class VideoGen implements INodeType {
 		            "property": "voiceId"
 		          }
 		        },
-		        "description": "Voice id from `GET /v1/resources/tts-voices` (e.g. `vg_voic_...`). A default voice is used when omitted. Any voice may be used here, including voices where `supportsDirectToolExecution` is false."
+		        "description": "Catalog `displayName` (e.g. `Matilda`) or voice id from `GET /v1/resources/tts-voices` (e.g. `vg_voic_...`). A default voice is used when omitted. Any voice may be used here, including voices where `supportsDirectToolExecution` is false."
 		      },
 		      {
 		        "displayName": "Voice Speed",
@@ -4094,7 +4094,7 @@ export class VideoGen implements INodeType {
 		            "property": "voiceId"
 		          }
 		        },
-		        "description": "Voice id from `GET /v1/resources/tts-voices` (e.g. `vg_voic_...`). A default voice is used when omitted. Any voice may be used here, including voices where `supportsDirectToolExecution` is false."
+		        "description": "Catalog `displayName` (e.g. `Matilda`) or voice id from `GET /v1/resources/tts-voices` (e.g. `vg_voic_...`). A default voice is used when omitted. Any voice may be used here, including voices where `supportsDirectToolExecution` is false."
 		      },
 		      {
 		        "displayName": "Voice Speed",
@@ -4385,7 +4385,7 @@ export class VideoGen implements INodeType {
 		            "value": "MAX"
 		          }
 		        ],
-		        "description": "Image generation quality tier for AI-generated visuals. Optional; when omitted, your account's Default AI quality for images is used (change it at https://app.videogen.io/settings/account). Only applies when `visualStyle.type` is AI_IMAGE or ENTITY; STOCK pulls existing footage and is unaffected."
+		        "description": "Image generation quality tier for AI-generated visuals. Optional; when omitted, your account's Default AI quality for images is used (change it at https://app.videogen.io/settings/account). Only applies when `visualStyle.type` is AI_IMAGE; STOCK pulls existing footage and is unaffected."
 		      },
 		      {
 		        "displayName": "Language",
