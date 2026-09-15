@@ -3,9 +3,9 @@
 
 # n8n-nodes-videogen
 
-Official [n8n](https://n8n.io) community node for [VideoGen](https://videogen.io). Generate images, videos, voiceovers, sound effects, music, and talking-head avatar clips, and run end-to-end video workflows, from n8n.
+Official [n8n](https://n8n.io) community node for [VideoGen](https://videogen.io). Start VideoGen workflows (script, voiceover, slideshow, and prompt to video) from n8n. Each operation auto-exports and waits until the finished MP4 is ready.
 
-The node is generated from a curated subset of the VideoGen developer API (6 resources, 35 operations), kept in sync with Zapier, Make, and Pipedream.
+The node is generated from a curated subset of the VideoGen developer API (1 resource, 4 operations), kept in sync with Zapier, Make, and Pipedream.
 
 Source: [github.com/video-gen/n8n-nodes-videogen](https://github.com/video-gen/n8n-nodes-videogen)
 
@@ -43,7 +43,7 @@ The node supports two credential types. Use either one.
 
 ## Example workflow
 
-Build a narrated video from a script, then continue when the run finishes.
+Build a narrated video from a script, then continue when the exported MP4 is ready.
 
 1. Add a **VideoGen** node. Resource: **Workflow**. Operation: **Script to video**.
 2. Set **Script** to the narration you want spoken, used verbatim. Example: `A 15-second product intro for a ceramic pour-over kettle.`
@@ -70,27 +70,19 @@ Build a narrated video from a script, then continue when the run finishes.
 ]
 ```
 
-5. Execute the node. It returns a `workflowRunId` immediately. The video is not ready yet.
-6. Wait for completion in one of two ways:
-   - **Trigger:** add a **VideoGen Trigger** node in another workflow, select `workflow_run.succeeded`, and match on the run id.
-   - **Poll:** add another **VideoGen** node, Resource **Workflow**, Operation **Get workflow run status**, and pass the `workflowRunId`. Repeat until the run is terminal.
+5. Execute the node. It waits until the export finishes, then returns `projectId`, `projectUrl` (editor link), `downloadUrl` (MP4), and `thumbnailUrl`.
 
 ## Operations
 
 The **VideoGen** node exposes these resources:
 
-- **Entity:** 2 operations
-- **File:** 3 operations
-- **Project:** 5 operations
-- **Resource:** 2 operations
-- **Tool:** 16 operations
-- **Workflow:** 7 operations
+- **Workflow:** 4 operations
 
-Long-running operations (workflow runs and tool executions) return an id. Poll with the matching get operation, or wait with the trigger below.
+Each operation waits until the MP4 is exported, then returns the project id, editor link, download URL, and thumbnail URL.
 
 ## Trigger
 
-The **VideoGen Trigger** node starts a workflow when VideoGen sends a subscribed event (for example, a workflow run or tool execution finishing). Select the events you care about. The node registers a webhook endpoint scoped to those events and removes it when the trigger is disabled.
+The **VideoGen Trigger** node starts a workflow when a VideoGen project export completes successfully (`project_export.succeeded`). Use it when you want a second workflow to continue from the finished MP4. The node registers a webhook endpoint and removes it when the trigger is disabled.
 
 ## Resources
 

@@ -14,49 +14,9 @@ const WEBHOOKS_URL = "https://api.videogen.io/v1/webhooks/endpoints";
 
 const EVENT_OPTIONS = [
   {
-    "name": "file.download_ready",
-    "value": "file.download_ready",
-    "description": "Triggers when a file is ready to download."
-  },
-  {
-    "name": "file.playback_ready",
-    "value": "file.playback_ready",
-    "description": "Triggers when a file is ready for playback."
-  },
-  {
-    "name": "file.upload.completed",
-    "value": "file.upload.completed",
-    "description": "Triggers when a file upload completes."
-  },
-  {
-    "name": "project_export.failed",
-    "value": "project_export.failed",
-    "description": "Triggers when a project export fails."
-  },
-  {
     "name": "project_export.succeeded",
     "value": "project_export.succeeded",
     "description": "Triggers when a project export completes successfully."
-  },
-  {
-    "name": "tool_execution.failed",
-    "value": "tool_execution.failed",
-    "description": "Triggers when a tool execution fails."
-  },
-  {
-    "name": "tool_execution.succeeded",
-    "value": "tool_execution.succeeded",
-    "description": "Triggers when a tool execution completes successfully."
-  },
-  {
-    "name": "workflow_run.failed",
-    "value": "workflow_run.failed",
-    "description": "Triggers when a workflow run fails."
-  },
-  {
-    "name": "workflow_run.succeeded",
-    "value": "workflow_run.succeeded",
-    "description": "Triggers when a workflow run completes successfully."
   }
 ];
 
