@@ -1,6 +1,6 @@
 {
   "name": "n8n-nodes-videogen",
-  "version": "2.2.0",
+  "version": "2.2.1",
   "description": "n8n community node for VideoGen. Start script, voiceover, slideshow, and prompt-to-video workflows. Node definition is generated from the VideoGen developer API OpenAPI spec.",
   "keywords": [
     "n8n-community-node-package",
