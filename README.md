@@ -5,7 +5,7 @@
 
 Official [n8n](https://n8n.io) community node for [VideoGen](https://videogen.io). Start VideoGen workflows (script, voiceover, slideshow, and prompt to video) from n8n. Each operation auto-exports and waits until the finished MP4 is ready.
 
-The node is generated from a curated subset of the VideoGen developer API (1 resource, 4 operations), kept in sync with Zapier, Make, and Pipedream.
+The node is generated from a curated subset of the VideoGen developer API (1 resource, 6 operations), kept in sync with Zapier, Make, and Pipedream.
 
 Source: [github.com/video-gen/n8n-nodes-videogen](https://github.com/video-gen/n8n-nodes-videogen)
 
@@ -76,7 +76,7 @@ Build a narrated video from a script, then continue when the exported MP4 is rea
 
 The **VideoGen** node exposes these resources:
 
-- **Workflow:** 4 operations
+- **Workflow:** 6 operations
 
 Each operation waits until the MP4 is exported, then returns the project id, editor link, download URL, and thumbnail URL.
 

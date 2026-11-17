@@ -27,8 +27,8 @@ const WORKFLOW_STARTS: Record<string, { method: IHttpRequestMethods; path: strin
       "visualStyle",
       "featuredBRollFileIds",
       "scenes",
-      "remixActions",
-      "exportOptions"
+      "exportOptions",
+      "videoEdits"
     ],
     "requiredBodyKeys": [
       "script",
@@ -42,11 +42,36 @@ const WORKFLOW_STARTS: Record<string, { method: IHttpRequestMethods; path: strin
       "slideScripts",
       "aspectRatio",
       "captionStyle",
-      "remixActions",
-      "exportOptions"
+      "exportOptions",
+      "videoEdits"
     ],
     "requiredBodyKeys": [
       "fileId"
+    ]
+  },
+  "translateVideo": {
+    "method": "POST",
+    "path": "/v1/workflows/translate-video",
+    "jsonKeys": [
+      "outputLanguages",
+      "exportOptions",
+      "videoEdits"
+    ],
+    "requiredBodyKeys": [
+      "videoFileId",
+      "outputLanguages"
+    ]
+  },
+  "videoToVideo": {
+    "method": "POST",
+    "path": "/v1/workflows/video-to-video",
+    "jsonKeys": [
+      "imageFileIds",
+      "exportOptions",
+      "videoEdits"
+    ],
+    "requiredBodyKeys": [
+      "prompt"
     ]
   },
   "voiceoverToVideo": {
@@ -57,8 +82,8 @@ const WORKFLOW_STARTS: Record<string, { method: IHttpRequestMethods; path: strin
       "aspectRatio",
       "visualStyle",
       "captionStyle",
-      "remixActions",
-      "exportOptions"
+      "exportOptions",
+      "videoEdits"
     ],
     "requiredBodyKeys": [
       "fileId",
@@ -100,8 +125,8 @@ const pollWorkflowRun = async (
 			json: true,
 		})) as IDataObject;
 		const status = run.status;
-		if (status === "succeeded" || status === "failed" || status === "cancelled") {
-			if (status !== "succeeded") {
+		if (status === "succeeded" || status === "failed" || status === "cancelled" || status === "awaiting_approval") {
+			if (status === "failed" || status === "cancelled") {
 				const error = run.error;
 				const message =
 					error != null && typeof error === "object" && "message" in error
@@ -120,7 +145,7 @@ const pollWorkflowRun = async (
 
 export class VideoGen implements INodeType {
 	description: INodeTypeDescription = {
-		displayName: "VideoGen",
+		displayName: "VideoGen - AI Video Generator",
 		name: "videoGen",
 		icon: {
 			light: "file:videogen.svg",
@@ -130,7 +155,7 @@ export class VideoGen implements INodeType {
 		version: 1,
 		subtitle: '={{$parameter["operation"] + ": " + $parameter["resource"]}}',
 		description: "Start VideoGen workflows and wait until the exported MP4 is ready",
-		defaults: { name: "VideoGen" },
+		defaults: { name: "VideoGen - AI Video Generator" },
 		inputs: [NodeConnectionTypes.Main],
 		outputs: [NodeConnectionTypes.Main],
 		usableAsTool: true,
@@ -243,6 +268,30 @@ export class VideoGen implements INodeType {
 		          "request": {
 		            "method": "POST",
 		            "url": "/v1/workflows/slideshow-to-video"
+		          }
+		        }
+		      },
+		      {
+		        "name": "Translate video",
+		        "value": "translateVideo",
+		        "action": "Translate video",
+		        "description": "Starts the workflow with auto-export on, waits until the video is ready, then returns the project id, editor link, signed MP4 download URL, and thumbnail URL.",
+		        "routing": {
+		          "request": {
+		            "method": "POST",
+		            "url": "/v1/workflows/translate-video"
+		          }
+		        }
+		      },
+		      {
+		        "name": "Video to video",
+		        "value": "videoToVideo",
+		        "action": "Video to video",
+		        "description": "Starts the workflow with auto-export on, waits until the video is ready, then returns the project id, editor link, signed MP4 download URL, and thumbnail URL.",
+		        "routing": {
+		          "request": {
+		            "method": "POST",
+		            "url": "/v1/workflows/video-to-video"
 		          }
 		        }
 		      },
@@ -386,19 +435,6 @@ export class VideoGen implements INodeType {
 		          }
 		        },
 		        "description": "When true, the generated OUTPUT files (the opening-frame image and the video clip) are created as temporary: guaranteed available for 24 hours, after which they may be archived and later deleted. Use this when your integration downloads or re-hosts the results itself and does not need VideoGen to retain them. The project and its metadata are unaffected. Defaults to false."
-		      },
-		      {
-		        "displayName": "Hide From Ui",
-		        "name": "hideFromUi",
-		        "type": "boolean",
-		        "default": false,
-		        "routing": {
-		          "send": {
-		            "type": "body",
-		            "property": "hideFromUi"
-		          }
-		        },
-		        "description": "When true, the project is hidden from Home and Projects by default, and generated files are hidden from the Media page. The project and files remain accessible through the API. Defaults to false."
 		      },
 		      {
 		        "displayName": "Export Options",
@@ -578,7 +614,7 @@ export class VideoGen implements INodeType {
 		            "property": "voiceId"
 		          }
 		        },
-		        "description": "Catalog `displayName` (e.g. `Matilda`) or voice id from `GET /v1/resources/tts-voices` (e.g. `vg_voic_...`). A default voice is used when omitted. Any voice may be used here, including voices where `supportsDirectToolExecution` is false."
+		        "description": "Catalog `displayName` (e.g. `Matilda`) or voice id from `GET /v1/resources/tts-voices` (e.g. `vg_voic_...`). A default voice is used when omitted. All catalog voices are supported."
 		      },
 		      {
 		        "displayName": "Voice Speed",
@@ -679,20 +715,6 @@ export class VideoGen implements INodeType {
 		        "description": "Optional timed scene descriptions guiding what to show on screen during each absolute time range of the video. Ranges must be sorted by `startSeconds` and non-overlapping. Omit to let the workflow choose visuals automatically."
 		      },
 		      {
-		        "displayName": "Remix Actions",
-		        "name": "remixActions",
-		        "type": "json",
-		        "default": "[]",
-		        "routing": {
-		          "send": {
-		            "type": "body",
-		            "property": "remixActions",
-		            "value": "={{ $value ? JSON.parse($value) : undefined }}"
-		          }
-		        },
-		        "description": "Optional edits applied to the project after the video is built, in order. Each action runs asynchronously; the response returns one remix action id per action. Recommended for script-to-video: `ENABLE_CAPTIONS` to show and style captions, `CONVERT_IMAGES_TO_VIDEOS` to animate still images into clips, `ADD_TRANSITIONS` to stamp transitions between sections, and `SET_LOGO` to overlay a logo (this workflow has no native caption-style or logo fields). See the [Remix actions](/remix-actions) guide."
-		      },
-		      {
 		        "displayName": "Is Output Temporary",
 		        "name": "isOutputTemporary",
 		        "type": "boolean",
@@ -703,20 +725,7 @@ export class VideoGen implements INodeType {
 		            "property": "isOutputTemporary"
 		          }
 		        },
-		        "description": "When true, the video's generated OUTPUT files (AI images, video clips, voiceover audio, avatars) are created as temporary: guaranteed available for 24 hours, after which they may be archived and later deleted. This also covers files produced by post-build remix actions (e.g. generated background music, image-to-video conversions). Use this when your integration downloads or re-hosts the results itself and does not need VideoGen to retain them. The project and its metadata are unaffected. Defaults to false."
-		      },
-		      {
-		        "displayName": "Hide From Ui",
-		        "name": "hideFromUi",
-		        "type": "boolean",
-		        "default": false,
-		        "routing": {
-		          "send": {
-		            "type": "body",
-		            "property": "hideFromUi"
-		          }
-		        },
-		        "description": "When true, the project is hidden from Home and Projects by default, and generated files are hidden from the Media page. The project and files remain accessible through the API. Defaults to false."
+		        "description": "When true, the video's generated OUTPUT files (AI images, video clips, voiceover audio, avatars) are created as temporary: guaranteed available for 24 hours, after which they may be archived and later deleted. This also covers files produced by post-build video edits (e.g. generated background music, image-to-video conversions). Use this when your integration downloads or re-hosts the results itself and does not need VideoGen to retain them. The project and its metadata are unaffected. Defaults to false."
 		      },
 		      {
 		        "displayName": "Export Options",
@@ -731,6 +740,20 @@ export class VideoGen implements INodeType {
 		          }
 		        },
 		        "description": "Export settings used when `autoExport` is true. Ignored when `autoExport` is false. Omitted fields use the same defaults as `POST /v1/projects/{projectId}/export`."
+		      },
+		      {
+		        "displayName": "Video Edits",
+		        "name": "videoEdits",
+		        "type": "json",
+		        "default": "[]",
+		        "routing": {
+		          "send": {
+		            "type": "body",
+		            "property": "videoEdits",
+		            "value": "={{ $value ? JSON.parse($value) : undefined }}"
+		          }
+		        },
+		        "description": "Optional edits applied to the project after the video is built, in order. Each action runs asynchronously; the response returns one video edit id per action. Recommended for script-to-video: `ENABLE_CAPTIONS` to show and style captions, `CONVERT_IMAGES_TO_VIDEOS` to animate still images into clips, `ADD_TRANSITIONS` to stamp transitions between sections, and `SET_LOGO` to overlay a logo (this workflow has no native caption-style or logo fields). See the [video edits](/video-edits) guide."
 		      }
 		    ]
 		  },
@@ -827,7 +850,7 @@ export class VideoGen implements INodeType {
 		            "property": "voiceId"
 		          }
 		        },
-		        "description": "Catalog `displayName` (e.g. `Matilda`) or voice id from `GET /v1/resources/tts-voices` (e.g. `vg_voic_...`). A default voice is used when omitted. Any voice may be used here, including voices where `supportsDirectToolExecution` is false."
+		        "description": "Catalog `displayName` (e.g. `Matilda`) or voice id from `GET /v1/resources/tts-voices` (e.g. `vg_voic_...`). A default voice is used when omitted. All catalog voices are supported."
 		      },
 		      {
 		        "displayName": "Voice Speed",
@@ -927,20 +950,6 @@ export class VideoGen implements INodeType {
 		        "description": "Optional file id of an uploaded logo image to overlay on the video (e.g. `vg_file_...`). Upload the image first via `POST /v1/files/upload`. Only image files are accepted."
 		      },
 		      {
-		        "displayName": "Remix Actions",
-		        "name": "remixActions",
-		        "type": "json",
-		        "default": "[]",
-		        "routing": {
-		          "send": {
-		            "type": "body",
-		            "property": "remixActions",
-		            "value": "={{ $value ? JSON.parse($value) : undefined }}"
-		          }
-		        },
-		        "description": "Optional edits applied to the project after the video is built, in order. Each action runs asynchronously; the response returns one remix action id per action. Captions and a logo are set with the `captionStyle` and `logoFileId` request fields above; recommended remix actions here are `CONVERT_IMAGES_TO_VIDEOS` to animate still images into clips, and `ADD_TRANSITIONS` to stamp transitions between sections and assets. See the [Remix actions](/remix-actions) guide."
-		      },
-		      {
 		        "displayName": "Is Output Temporary",
 		        "name": "isOutputTemporary",
 		        "type": "boolean",
@@ -951,20 +960,7 @@ export class VideoGen implements INodeType {
 		            "property": "isOutputTemporary"
 		          }
 		        },
-		        "description": "When true, the video's generated OUTPUT files (AI images, video clips, voiceover audio, avatars) are created as temporary: guaranteed available for 24 hours, after which they may be archived and later deleted. This also covers files produced by post-build remix actions (e.g. generated background music, image-to-video conversions). Use this when your integration downloads or re-hosts the results itself and does not need VideoGen to retain them. The project and its metadata are unaffected. Defaults to false."
-		      },
-		      {
-		        "displayName": "Hide From Ui",
-		        "name": "hideFromUi",
-		        "type": "boolean",
-		        "default": false,
-		        "routing": {
-		          "send": {
-		            "type": "body",
-		            "property": "hideFromUi"
-		          }
-		        },
-		        "description": "When true, the project is hidden from Home and Projects by default, and generated files are hidden from the Media page. The project and files remain accessible through the API. Defaults to false."
+		        "description": "When true, the video's generated OUTPUT files (AI images, video clips, voiceover audio, avatars) are created as temporary: guaranteed available for 24 hours, after which they may be archived and later deleted. This also covers files produced by post-build video edits (e.g. generated background music, image-to-video conversions). Use this when your integration downloads or re-hosts the results itself and does not need VideoGen to retain them. The project and its metadata are unaffected. Defaults to false."
 		      },
 		      {
 		        "displayName": "Export Options",
@@ -979,6 +975,346 @@ export class VideoGen implements INodeType {
 		          }
 		        },
 		        "description": "Export settings used when `autoExport` is true. Ignored when `autoExport` is false. Omitted fields use the same defaults as `POST /v1/projects/{projectId}/export`."
+		      },
+		      {
+		        "displayName": "Video Edits",
+		        "name": "videoEdits",
+		        "type": "json",
+		        "default": "[]",
+		        "routing": {
+		          "send": {
+		            "type": "body",
+		            "property": "videoEdits",
+		            "value": "={{ $value ? JSON.parse($value) : undefined }}"
+		          }
+		        },
+		        "description": "Optional edits applied to the project after the video is built, in order. Each action runs asynchronously; the response returns one video edit id per action. Captions and a logo are set with the `captionStyle` and `logoFileId` request fields above; recommended video edits here are `CONVERT_IMAGES_TO_VIDEOS` to animate still images into clips, and `ADD_TRANSITIONS` to stamp transitions between sections and assets. See the [video edits](/video-edits) guide."
+		      }
+		    ]
+		  },
+		  {
+		    "displayName": "Video File Id",
+		    "name": "videoFileId",
+		    "type": "string",
+		    "default": "",
+		    "routing": {
+		      "send": {
+		        "type": "body",
+		        "property": "videoFileId"
+		      }
+		    },
+		    "required": true,
+		    "description": "Id of the video to translate (e.g. `vg_file_...`), uploaded via `POST /v1/files/upload`. Must be 8 minutes or shorter.",
+		    "displayOptions": {
+		      "show": {
+		        "resource": [
+		          "workflow"
+		        ],
+		        "operation": [
+		          "translateVideo"
+		        ]
+		      }
+		    }
+		  },
+		  {
+		    "displayName": "Output Languages",
+		    "name": "outputLanguages",
+		    "type": "json",
+		    "default": "[]",
+		    "routing": {
+		      "send": {
+		        "type": "body",
+		        "property": "outputLanguages",
+		        "value": "={{ $value ? JSON.parse($value) : undefined }}"
+		      }
+		    },
+		    "required": true,
+		    "description": "Languages to translate into, as language codes (e.g. `[\"es\", \"fr\"]`). At least one supported language, none equal to `sourceLanguage`. Repeated languages are translated once, keeping their first occurrence. The run's `outputs` follow this order, and the first language that succeeds is the project's default video for export and edit.",
+		    "displayOptions": {
+		      "show": {
+		        "resource": [
+		          "workflow"
+		        ],
+		        "operation": [
+		          "translateVideo"
+		        ]
+		      }
+		    }
+		  },
+		  {
+		    "displayName": "Additional Fields",
+		    "name": "additionalFields",
+		    "type": "collection",
+		    "placeholder": "Add Field",
+		    "default": {},
+		    "displayOptions": {
+		      "show": {
+		        "resource": [
+		          "workflow"
+		        ],
+		        "operation": [
+		          "translateVideo"
+		        ]
+		      }
+		    },
+		    "options": [
+		      {
+		        "displayName": "Source Language",
+		        "name": "sourceLanguage",
+		        "type": "string",
+		        "default": "",
+		        "routing": {
+		          "send": {
+		            "type": "body",
+		            "property": "sourceLanguage"
+		          }
+		        },
+		        "description": "Language spoken in the source video, as a language code (e.g. `en`). Omit or pass `null` to detect it automatically."
+		      },
+		      {
+		        "displayName": "Is Output Temporary",
+		        "name": "isOutputTemporary",
+		        "type": "boolean",
+		        "default": false,
+		        "routing": {
+		          "send": {
+		            "type": "body",
+		            "property": "isOutputTemporary"
+		          }
+		        },
+		        "description": "When true, the generated OUTPUT files (the translated videos) are created as temporary: guaranteed available for 24 hours, after which they may be archived and later deleted. Use this when your integration downloads or re-hosts the results itself and does not need VideoGen to retain them. The project and its metadata are unaffected. Defaults to false."
+		      },
+		      {
+		        "displayName": "Export Options",
+		        "name": "exportOptions",
+		        "type": "json",
+		        "default": "{}",
+		        "routing": {
+		          "send": {
+		            "type": "body",
+		            "property": "exportOptions",
+		            "value": "={{ $value ? JSON.parse($value) : undefined }}"
+		          }
+		        },
+		        "description": "Export settings used when `autoExport` is true. Ignored when `autoExport` is false. Omitted fields use the same defaults as `POST /v1/projects/{projectId}/export`. `editableVideoId` is not accepted here."
+		      },
+		      {
+		        "displayName": "Video Edits",
+		        "name": "videoEdits",
+		        "type": "json",
+		        "default": "[]",
+		        "routing": {
+		          "send": {
+		            "type": "body",
+		            "property": "videoEdits",
+		            "value": "={{ $value ? JSON.parse($value) : undefined }}"
+		          }
+		        },
+		        "description": "Optional edits applied after the videos are built, in order. Each action runs on every language's video. The response returns one video edit id per action. See the [video edits](/video-edits) guide."
+		      }
+		    ]
+		  },
+		  {
+		    "displayName": "Prompt",
+		    "name": "prompt",
+		    "type": "string",
+		    "default": "",
+		    "routing": {
+		      "send": {
+		        "type": "body",
+		        "property": "prompt"
+		      }
+		    },
+		    "required": true,
+		    "description": "Text prompt describing how the restyled video should look (e.g. `Hand-made claymation with soft studio lighting`). Must be non-empty.",
+		    "displayOptions": {
+		      "show": {
+		        "resource": [
+		          "workflow"
+		        ],
+		        "operation": [
+		          "videoToVideo"
+		        ]
+		      }
+		    }
+		  },
+		  {
+		    "displayName": "Additional Fields",
+		    "name": "additionalFields",
+		    "type": "collection",
+		    "placeholder": "Add Field",
+		    "default": {},
+		    "displayOptions": {
+		      "show": {
+		        "resource": [
+		          "workflow"
+		        ],
+		        "operation": [
+		          "videoToVideo"
+		        ]
+		      }
+		    },
+		    "options": [
+		      {
+		        "displayName": "Video File Id",
+		        "name": "videoFileId",
+		        "type": "string",
+		        "default": "",
+		        "routing": {
+		          "send": {
+		            "type": "body",
+		            "property": "videoFileId"
+		          }
+		        },
+		        "description": "Id of the video to restyle (e.g. `vg_file_...`), uploaded via `POST /v1/files/upload`. Provide exactly one of `videoFileId` or `videoUrl`."
+		      },
+		      {
+		        "displayName": "Video Url",
+		        "name": "videoUrl",
+		        "type": "string",
+		        "default": "",
+		        "routing": {
+		          "send": {
+		            "type": "body",
+		            "property": "videoUrl"
+		          }
+		        },
+		        "description": "Public `http://` or `https://` link to a video page or a video file to restyle. The run imports it before restyling, so you do not need to import it first. Private, login-only, and DRM-protected videos cannot be imported, and an unusable link fails the run. Provide exactly one of `videoFileId` or `videoUrl`."
+		      },
+		      {
+		        "displayName": "Trim Start Seconds",
+		        "name": "trimStartSeconds",
+		        "type": "number",
+		        "default": 0,
+		        "routing": {
+		          "send": {
+		            "type": "body",
+		            "property": "trimStartSeconds"
+		          }
+		        },
+		        "description": "Second of the video where the restyled part starts. Optional; defaults to `0`. Must leave at least 2 seconds before the end of the video."
+		      },
+		      {
+		        "displayName": "Trim End Seconds",
+		        "name": "trimEndSeconds",
+		        "type": "number",
+		        "default": 0,
+		        "routing": {
+		          "send": {
+		            "type": "body",
+		            "property": "trimEndSeconds"
+		          }
+		        },
+		        "description": "Second of the video where the restyled part ends. Optional; defaults to `trimStartSeconds` plus 120, capped at the end of the video. The restyled part must be between 2 and 120 seconds long."
+		      },
+		      {
+		        "displayName": "Image File Ids",
+		        "name": "imageFileIds",
+		        "type": "json",
+		        "default": "[]",
+		        "routing": {
+		          "send": {
+		            "type": "body",
+		            "property": "imageFileIds",
+		            "value": "={{ $value ? JSON.parse($value) : undefined }}"
+		          }
+		        },
+		        "description": "Optional ids of up to 10 previously uploaded reference images (e.g. `vg_file_...`) that guide the look of the restyle."
+		      },
+		      {
+		        "displayName": "Quality",
+		        "name": "quality",
+		        "type": "options",
+		        "default": "LOW",
+		        "routing": {
+		          "send": {
+		            "type": "body",
+		            "property": "quality"
+		          }
+		        },
+		        "options": [
+		          {
+		            "name": "LOW",
+		            "value": "LOW"
+		          },
+		          {
+		            "name": "STANDARD",
+		            "value": "STANDARD"
+		          },
+		          {
+		            "name": "HIGH",
+		            "value": "HIGH"
+		          },
+		          {
+		            "name": "MAX",
+		            "value": "MAX"
+		          }
+		        ],
+		        "description": "Restyle quality (`LOW`, `STANDARD`, `HIGH`, or `MAX`). Higher tiers cost more and follow the source more faithfully. Optional; defaults to `HIGH`."
+		      },
+		      {
+		        "displayName": "Audio",
+		        "name": "audio",
+		        "type": "options",
+		        "default": "KEEP_ORIGINAL",
+		        "routing": {
+		          "send": {
+		            "type": "body",
+		            "property": "audio"
+		          }
+		        },
+		        "options": [
+		          {
+		            "name": "KEEP ORIGINAL",
+		            "value": "KEEP_ORIGINAL"
+		          },
+		          {
+		            "name": "GENERATE",
+		            "value": "GENERATE"
+		          }
+		        ],
+		        "description": "`KEEP_ORIGINAL` keeps the source video's audio under the restyled picture. `GENERATE` uses newly generated audio instead. Optional; defaults to `KEEP_ORIGINAL`."
+		      },
+		      {
+		        "displayName": "Is Output Temporary",
+		        "name": "isOutputTemporary",
+		        "type": "boolean",
+		        "default": false,
+		        "routing": {
+		          "send": {
+		            "type": "body",
+		            "property": "isOutputTemporary"
+		          }
+		        },
+		        "description": "When true, the generated OUTPUT files (the restyled video clips) are created as temporary: guaranteed available for 24 hours, after which they may be archived and later deleted. Use this when your integration downloads or re-hosts the results itself and does not need VideoGen to retain them. The project and its metadata are unaffected. Defaults to false."
+		      },
+		      {
+		        "displayName": "Export Options",
+		        "name": "exportOptions",
+		        "type": "json",
+		        "default": "{}",
+		        "routing": {
+		          "send": {
+		            "type": "body",
+		            "property": "exportOptions",
+		            "value": "={{ $value ? JSON.parse($value) : undefined }}"
+		          }
+		        },
+		        "description": "Export settings used when `autoExport` is true. Ignored when `autoExport` is false. Omitted fields use the same defaults as `POST /v1/projects/{projectId}/export`."
+		      },
+		      {
+		        "displayName": "Video Edits",
+		        "name": "videoEdits",
+		        "type": "json",
+		        "default": "[]",
+		        "routing": {
+		          "send": {
+		            "type": "body",
+		            "property": "videoEdits",
+		            "value": "={{ $value ? JSON.parse($value) : undefined }}"
+		          }
+		        },
+		        "description": "Optional edits applied to the project after the video is built, in order. Each action runs asynchronously; the response returns one video edit id per action. See the [video edits](/video-edits) guide."
 		      }
 		    ]
 		  },
@@ -1232,20 +1568,6 @@ export class VideoGen implements INodeType {
 		        "description": "Optional production notes for the AI that builds the video — visual direction for how to illustrate the voiceover (e.g. on-screen code or text to display, specific b-roll to feature, or scene-by-scene staging). Never spoken; does not change the uploaded voiceover audio or its transcript."
 		      },
 		      {
-		        "displayName": "Remix Actions",
-		        "name": "remixActions",
-		        "type": "json",
-		        "default": "[]",
-		        "routing": {
-		          "send": {
-		            "type": "body",
-		            "property": "remixActions",
-		            "value": "={{ $value ? JSON.parse($value) : undefined }}"
-		          }
-		        },
-		        "description": "Optional edits applied to the project after the video is built, in order. Each action runs asynchronously; the response returns one remix action id per action. Captions and a logo are set with the `captionStyle` and `logoFileId` request fields above; recommended remix actions here are `CONVERT_IMAGES_TO_VIDEOS` to animate still images into clips, and `ADD_TRANSITIONS` to stamp transitions between sections and assets. See the [Remix actions](/remix-actions) guide."
-		      },
-		      {
 		        "displayName": "Is Output Temporary",
 		        "name": "isOutputTemporary",
 		        "type": "boolean",
@@ -1256,20 +1578,7 @@ export class VideoGen implements INodeType {
 		            "property": "isOutputTemporary"
 		          }
 		        },
-		        "description": "When true, the video's generated OUTPUT files (AI images, video clips, voiceover audio, avatars) are created as temporary: guaranteed available for 24 hours, after which they may be archived and later deleted. This also covers files produced by post-build remix actions (e.g. generated background music, image-to-video conversions). Use this when your integration downloads or re-hosts the results itself and does not need VideoGen to retain them. The project and its metadata are unaffected. Defaults to false."
-		      },
-		      {
-		        "displayName": "Hide From Ui",
-		        "name": "hideFromUi",
-		        "type": "boolean",
-		        "default": false,
-		        "routing": {
-		          "send": {
-		            "type": "body",
-		            "property": "hideFromUi"
-		          }
-		        },
-		        "description": "When true, the project is hidden from Home and Projects by default, and generated files are hidden from the Media page. The project and files remain accessible through the API. Defaults to false."
+		        "description": "When true, the video's generated OUTPUT files (AI images, video clips, voiceover audio, avatars) are created as temporary: guaranteed available for 24 hours, after which they may be archived and later deleted. This also covers files produced by post-build video edits (e.g. generated background music, image-to-video conversions). Use this when your integration downloads or re-hosts the results itself and does not need VideoGen to retain them. The project and its metadata are unaffected. Defaults to false."
 		      },
 		      {
 		        "displayName": "Export Options",
@@ -1284,6 +1593,20 @@ export class VideoGen implements INodeType {
 		          }
 		        },
 		        "description": "Export settings used when `autoExport` is true. Ignored when `autoExport` is false. Omitted fields use the same defaults as `POST /v1/projects/{projectId}/export`."
+		      },
+		      {
+		        "displayName": "Video Edits",
+		        "name": "videoEdits",
+		        "type": "json",
+		        "default": "[]",
+		        "routing": {
+		          "send": {
+		            "type": "body",
+		            "property": "videoEdits",
+		            "value": "={{ $value ? JSON.parse($value) : undefined }}"
+		          }
+		        },
+		        "description": "Optional edits applied to the project after the video is built, in order. Each action runs asynchronously; the response returns one video edit id per action. Captions and a logo are set with the `captionStyle` and `logoFileId` request fields above; recommended video edits here are `CONVERT_IMAGES_TO_VIDEOS` to animate still images into clips, and `ADD_TRANSITIONS` to stamp transitions between sections and assets. See the [video edits](/video-edits) guide."
 		      }
 		    ]
 		  }
